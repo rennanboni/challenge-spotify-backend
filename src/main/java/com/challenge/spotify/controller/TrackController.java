@@ -29,9 +29,9 @@ public class TrackController {
   }
 
   @GetMapping("/getCover")
-  public ResponseEntity<byte[]> getCover(@RequestParam String isrc) {
+  public Mono<ResponseEntity<byte[]>> getCover(@RequestParam String isrc) {
     return trackService.getTrackCover(isrc)
       .map(cover -> ResponseEntity.ok().contentType(MediaType.IMAGE_JPEG).body(cover))
-      .orElse(ResponseEntity.notFound().build());
+      .defaultIfEmpty(ResponseEntity.notFound().build());
   }
 }

@@ -1,8 +1,10 @@
 package com.challenge.spotify.service;
 
+import com.challenge.spotify.domain.Album;
 import com.challenge.spotify.domain.Track;
 import com.challenge.spotify.dto.SpotifyAlbumDto;
 import com.challenge.spotify.dto.SpotifyTrackDto;
+import com.challenge.spotify.repository.AlbumRepository;
 import com.challenge.spotify.repository.TrackRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,7 @@ import java.util.stream.Collectors;
 public class TrackService {
 
   private final TrackRepository trackRepository;
+  private final AlbumRepository albumRepository;
   private final SpotifyService spotifyService;
 
   public Mono<Track> createTrack(String isrc) {
@@ -28,29 +31,36 @@ public class TrackService {
         if (spotifyTrack == null) {
           return Mono.error(new IllegalArgumentException("Track not found for ISRC " + isrc));
         }
-        return spotifyService.getAlbumById(spotifyTrack.getAlbum().getId())
-          .flatMap(spotifyAlbum -> {
-            String imageUrl = spotifyAlbum.getImages().stream()
-              .findFirst()
-              .map(SpotifyAlbumDto.Image::getUrl)
-              .orElse(null);
+        
+        Optional<Album> existingAlbum = albumRepository.findById(spotifyTrack.getAlbum().getId());
 
-            Mono<byte[]> coverImageMono = imageUrl != null ? spotifyService.getCoverImage(imageUrl) : Mono.just(new byte[0]);
-
-            return coverImageMono.map(coverImage -> {
-              Track track = Track.builder()
-                .isrc(isrc)
-                .name(spotifyTrack.getName())
-                .isExplicit(spotifyTrack.isExplicit())
-                .playbackSeconds(spotifyTrack.getDurationMs() != null ? spotifyTrack.getDurationMs() / 1000 : null)
-                .albumName(spotifyTrack.getAlbum().getName())
-                .albumId(spotifyTrack.getAlbum().getId())
-                .artistName(spotifyTrack.getArtists().stream().map(SpotifyTrackDto.Artist::getName).collect(Collectors.joining(", ")))
-                .coverImage(coverImage)
-                .build();
-              return trackRepository.save(track);
-            });
-          });
+        Mono<Album> albumMono = existingAlbum.map(Mono::just).orElseGet(() -> 
+            spotifyService.getAlbumById(spotifyTrack.getAlbum().getId())
+                .flatMap(spotifyAlbum -> {
+                    String imageUrl = spotifyAlbum.getImages().stream()
+                        .findFirst()
+                        .map(SpotifyAlbumDto.Image::getUrl)
+                        .orElse(null);
+                    Album newAlbum = Album.builder()
+                        .id(spotifyTrack.getAlbum().getId())
+                        .name(spotifyTrack.getAlbum().getName())
+                        .coverImage(imageUrl)
+                        .build();
+                    return Mono.just(albumRepository.save(newAlbum));
+                })
+        );
+        
+        return albumMono.flatMap(album -> {
+            Track track = Track.builder()
+              .isrc(isrc)
+              .name(spotifyTrack.getName())
+              .isExplicit(spotifyTrack.isExplicit())
+              .playbackSeconds(spotifyTrack.getDurationMs() != null ? spotifyTrack.getDurationMs() / 1000 : null)
+              .album(album)
+              .artistName(spotifyTrack.getArtists().stream().map(SpotifyTrackDto.Artist::getName).collect(Collectors.joining(", ")))
+              .build();
+            return Mono.just(trackRepository.save(track));
+        });
       });
   }
 
@@ -58,7 +68,15 @@ public class TrackService {
     return trackRepository.findById(isrc);
   }
 
-  public Optional<byte[]> getTrackCover(String isrc) {
-    return trackRepository.findById(isrc).map(Track::getCoverImage);
+  public Mono<byte[]> getTrackCover(String isrc) {
+    return Mono.justOrEmpty(trackRepository.findById(isrc))
+        .flatMap(track -> {
+            String coverImageUrl = track.getAlbum().getCoverImage();
+            if (coverImageUrl != null && !coverImageUrl.isEmpty()) {
+                return spotifyService.getCoverImage(coverImageUrl);
+            } else {
+                return Mono.empty();
+            }
+        });
   }
 }

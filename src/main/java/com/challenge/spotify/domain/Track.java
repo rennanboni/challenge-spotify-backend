@@ -3,7 +3,8 @@ package com.challenge.spotify.domain;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -27,15 +28,12 @@ public class Track {
 
   private String artistName;
 
-  private String albumName;
-
-  private String albumId;
+  @ManyToOne
+  @JoinColumn(name = "album_id")
+  private Album album;
 
   private boolean isExplicit;
 
   private Integer playbackSeconds;
 
-  @Lob
-  @Column(columnDefinition = "BYTEA")
-  private byte[] coverImage;
 }
