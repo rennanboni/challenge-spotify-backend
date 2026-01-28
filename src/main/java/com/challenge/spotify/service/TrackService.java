@@ -34,19 +34,22 @@ public class TrackService {
         
         Optional<Album> existingAlbum = albumRepository.findById(spotifyTrack.getAlbum().getId());
 
-        Mono<Album> albumMono = existingAlbum.map(Mono::just).orElseGet(() -> 
+        Mono<Album> albumMono = existingAlbum.map(Mono::just).orElseGet(() ->
             spotifyService.getAlbumById(spotifyTrack.getAlbum().getId())
                 .flatMap(spotifyAlbum -> {
                     String imageUrl = spotifyAlbum.getImages().stream()
                         .findFirst()
                         .map(SpotifyAlbumDto.Image::getUrl)
                         .orElse(null);
-                    Album newAlbum = Album.builder()
-                        .id(spotifyTrack.getAlbum().getId())
-                        .name(spotifyTrack.getAlbum().getName())
-                        .coverImage(imageUrl)
-                        .build();
-                    return Mono.just(albumRepository.save(newAlbum));
+                    return spotifyService.getCoverImage(imageUrl)
+                        .flatMap(imageBytes -> {
+                            Album newAlbum = Album.builder()
+                                .id(spotifyTrack.getAlbum().getId())
+                                .name(spotifyTrack.getAlbum().getName())
+                                .coverImage(imageBytes)
+                                .build();
+                            return Mono.just(albumRepository.save(newAlbum));
+                        });
                 })
         );
         
@@ -70,13 +73,6 @@ public class TrackService {
 
   public Mono<byte[]> getTrackCover(String isrc) {
     return Mono.justOrEmpty(trackRepository.findById(isrc))
-        .flatMap(track -> {
-            String coverImageUrl = track.getAlbum().getCoverImage();
-            if (coverImageUrl != null && !coverImageUrl.isEmpty()) {
-                return spotifyService.getCoverImage(coverImageUrl);
-            } else {
-                return Mono.empty();
-            }
-        });
+        .map(track -> track.getAlbum().getCoverImage());
   }
 }

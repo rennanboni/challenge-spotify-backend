@@ -12,7 +12,6 @@ public class TrackDto {
   private String name;
   private String artistName;
   private String albumName;
-  private String coverImage;
   private boolean isExplicit;
   private Integer playbackSeconds;
 
@@ -22,7 +21,6 @@ public class TrackDto {
       .name(track.getName())
       .artistName(track.getArtistName())
       .albumName(track.getAlbum().getName())
-      .coverImage(track.getAlbum().getCoverImage())
       .isExplicit(track.isExplicit())
       .playbackSeconds(track.getPlaybackSeconds())
       .build();
