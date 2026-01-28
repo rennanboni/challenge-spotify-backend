@@ -18,8 +18,7 @@ public class TrackController {
   @PostMapping("/createTrack")
   public Mono<ResponseEntity<TrackDto>> createTrack(@RequestParam String isrc) {
     return trackService.createTrack(isrc)
-      .map(track -> ResponseEntity.ok(TrackDto.fromEntity(track)))
-      .onErrorResume(IllegalArgumentException.class, e -> Mono.just(ResponseEntity.badRequest().body(null)));
+      .map(track -> ResponseEntity.ok(TrackDto.fromEntity(track)));
   }
 
   @GetMapping("/getTrackMetadata")

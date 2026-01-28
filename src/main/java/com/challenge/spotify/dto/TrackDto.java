@@ -8,23 +8,23 @@ import lombok.Data;
 @Builder
 public class TrackDto {
 
-    private String isrc;
-    private String name;
-    private String artistName;
-    private String albumName;
-    private String albumId;
-    private boolean isExplicit;
-    private Integer playbackSeconds;
+  private String isrc;
+  private String name;
+  private String artistName;
+  private String albumName;
+  private String albumId;
+  private boolean isExplicit;
+  private Integer playbackSeconds;
 
-    public static TrackDto fromEntity(Track track) {
-        return TrackDto.builder()
-                .isrc(track.getIsrc())
-                .name(track.getName())
-                .artistName(track.getArtistName())
-                .albumName(track.getAlbumName())
-                .albumId(track.getAlbumId())
-                .isExplicit(track.isExplicit())
-                .playbackSeconds(track.getPlaybackSeconds())
-                .build();
-    }
+  public static TrackDto fromEntity(Track track) {
+    return TrackDto.builder()
+      .isrc(track.getIsrc())
+      .name(track.getName())
+      .artistName(track.getArtistName())
+      .albumName(track.getAlbumName())
+      .albumId(track.getAlbumId())
+      .isExplicit(track.isExplicit())
+      .playbackSeconds(track.getPlaybackSeconds())
+      .build();
+  }
 }
