@@ -17,7 +17,7 @@ public class SecurityConfig {
     http
       .authorizeHttpRequests(authorizeRequests ->
         authorizeRequests
-          .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/api-docs/**").permitAll()
+          .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/api-docs/**", "/codechallenge/getCover").permitAll()
           .requestMatchers("/codechallenge/**").authenticated()
           .anyRequest().permitAll()
       )
